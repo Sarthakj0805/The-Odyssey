@@ -73,3 +73,11 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# --- The Odyssey ---
+# ML-Agents training output (checkpoints, logs). The exported model goes to Assets/ML/Models,
+# exported curves to results/training.
+/ml/results/
+__pycache__/
+*.pyc
+/[Tt]emp/
