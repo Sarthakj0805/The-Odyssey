@@ -1,0 +1,19 @@
+{
+    "name": "Odyssey.Runtime",
+    "rootNamespace": "Odyssey",
+    "references": [
+        "Unity.InputSystem",
+        "Unity.ML-Agents",
+        "Unity.InferenceEngine",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
