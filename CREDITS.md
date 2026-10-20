@@ -10,9 +10,9 @@
 | Placeholder sprites (solid shapes) | Generated at runtime by `Placeholder.cs` | Part of this repo (MIT) | All characters, terrain, props |
 | LegacyRuntime font | Built into Unity | Unity built-in resource | UI text |
 
-No third-party art or audio is committed yet. When real art is added (planned: CC0 packs from
-itch.io / Kenney), every pack must be listed here with its link and licence **before** it is
-committed. Paid Asset Store content must never be committed.
+No third-party art or audio is used in the beta. If art is added later, every pack must be listed
+here with its link and licence **before** it is committed. Paid Asset Store content must never be
+committed.
 
 ## Libraries
 | Library | Version | Licence |
