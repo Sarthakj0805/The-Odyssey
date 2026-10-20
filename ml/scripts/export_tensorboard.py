@@ -14,9 +14,8 @@ TAGS = [
     "Environment/Cumulative Reward",
     "Environment/Episode Length",
     "Director/InBand",
-    "Director/HpLostFrac",
     "Director/Deaths",
-    "Director/RunCompleted",
+    "Director/Difficulty",
     "Policy/Entropy",
 ]
 

@@ -2,14 +2,13 @@ using Odyssey.Telemetry;
 
 namespace Odyssey.Director
 {
-    /// <summary>Baseline (a): always the same medium setting.</summary>
+    /// <summary>Baseline 1: always medium.</summary>
     public sealed class FixedDirector : IDirector
     {
-        private readonly DirectorDecision _decision;
-        public FixedDirector() : this(new DirectorDecision(1, 1, false)) { }
-        public FixedDirector(DirectorDecision decision) { _decision = decision; }
+        private readonly int _difficulty;
+        public FixedDirector(int difficulty = 1) { _difficulty = Difficulty.Clamp(difficulty); }
         public string Name => "Fixed";
-        public DirectorDecision Decide(in SegmentTelemetry last) => _decision;
+        public int Decide(in SegmentTelemetry last) => _difficulty;
         public void ResetRun() { }
     }
 }

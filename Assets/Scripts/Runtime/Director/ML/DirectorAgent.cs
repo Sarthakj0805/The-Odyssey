@@ -8,16 +8,14 @@ using UnityEngine;
 namespace Odyssey.Director.ML
 {
     /// <summary>
-    /// ML-Agents agent behind the RL AI Director.
-    ///  Observation: 10 normalised telemetry features (<see cref="DirectorObservation"/>).
-    ///  Actions:     3 discrete branches [difficulty 3, enemy density 3, boon pool 2].
-    ///  Reward:      <see cref="ChallengeBand.Reward"/> per segment.
-    /// One decision is requested per segment boundary.
+    /// The RL AI Director as an ML-Agents agent.
+    ///   Observation: 4 telemetry features (<see cref="DirectorObservation"/>).
+    ///   Action:      1 discrete choice - next segment difficulty (easy / medium / hard).
+    ///   Reward:      <see cref="ChallengeBand.Reward"/> (+1 in band, -1 per death, -0.5 trivial).
     ///
-    /// Training mode: the agent owns a <see cref="RunSimulator"/> (simulated player with a random
-    /// skill profile per episode) and is stepped by the Academy via a DecisionRequester.
-    /// Gameplay / evaluation mode: the caller sets the observation and steps the Academy
-    /// manually (<see cref="DecideNow"/>), so inference is synchronous.
+    /// Training mode: plays against a <see cref="RunSimulator"/> (random skill level per episode,
+    /// one episode = one run). Gameplay mode: the game passes in real telemetry and asks for a
+    /// decision with <see cref="DecideNow"/>, which runs the ONNX policy immediately.
     /// </summary>
     public class DirectorAgent : Agent
     {
@@ -25,18 +23,15 @@ namespace Odyssey.Director.ML
 
         [SerializeField] private Mode mode = Mode.Gameplay;
         [SerializeField] private int seed = 1;
-        [Tooltip("Training only: probability of each skill profile (Novice, Average, Expert).")]
-        [SerializeField] private Vector3 skillMix = new Vector3(1f, 1f, 1f);
 
         private readonly float[] _obs = new float[DirectorObservation.Size];
-        private SegmentTelemetry _current;
+        private readonly HeuristicDirector _fallback = new HeuristicDirector();
+        private SegmentTelemetry _last;
         private RunSimulator _sim;
         private System.Random _rng;
-        private readonly HeuristicDirector _fallback = new HeuristicDirector();
 
-        public DirectorDecision LastDecision { get; private set; }
+        public int LastDecision { get; private set; } = 1;
         public bool HasDecision { get; private set; }
-        public Mode AgentMode => mode;
 
         public void Configure(Mode m, int s) { mode = m; seed = s; }
 
@@ -44,75 +39,57 @@ namespace Odyssey.Director.ML
         {
             _rng = new System.Random(seed);
             _sim = new RunSimulator(seed * 7919 + 13);
-            _current = _sim.Neutral();
+            _last = _sim.Neutral();
             if (mode == Mode.Gameplay) MaxStep = 0;
         }
 
         public override void OnEpisodeBegin()
         {
             if (mode != Mode.Training) return;
-            _sim.Reset(PickProfile());
-            _current = _sim.Neutral();
-        }
-
-        private SkillProfile PickProfile()
-        {
-            float total = skillMix.x + skillMix.y + skillMix.z;
-            double r = _rng.NextDouble() * total;
-            var p = r < skillMix.x ? SkillProfile.Novice : r < skillMix.x + skillMix.y ? SkillProfile.Average : SkillProfile.Expert;
-            // jitter skill so the policy generalises between the three anchor profiles
+            // pick a random skill level (with a little jitter) so the policy must work for everyone
+            var p = SkillProfile.All[_rng.Next(SkillProfile.All.Length)];
             p.Skill = Mathf.Clamp(p.Skill + (float)(_rng.NextDouble() - 0.5) * 0.1f, 0.2f, 0.95f);
-            return p;
+            _sim.Reset(p);
+            _last = _sim.Neutral();
         }
 
         public override void CollectObservations(VectorSensor sensor)
         {
-            DirectorObservation.Write(_current, _obs);
-            for (int i = 0; i < _obs.Length; i++) sensor.AddObservation(_obs[i]);
+            DirectorObservation.Write(_last, _obs);
+            foreach (var v in _obs) sensor.AddObservation(v);
         }
 
         public override void OnActionReceived(ActionBuffers actions)
         {
-            var a = actions.DiscreteActions;
-            LastDecision = new DirectorDecision(a[0], a[1], a[2] == 1);
+            LastDecision = Difficulty.Clamp(actions.DiscreteActions[0]);
             HasDecision = true;
-
             if (mode != Mode.Training) return;
 
-            var t = _sim.Step(LastDecision);
-            float reward = ChallengeBand.Reward(t, LastDecision.StrongBoons && t.SegmentIndex > 0);
-            AddReward(reward);
-            _current = t;
+            _last = _sim.Step(LastDecision);
+            AddReward(ChallengeBand.Reward(_last));
 
             var stats = Academy.Instance.StatsRecorder;
-            stats.Add("Director/InBand", ChallengeBand.InBand(t) ? 1f : 0f);
-            stats.Add("Director/HpLostFrac", t.HpLostFrac);
-            stats.Add("Director/Deaths", t.Deaths);
+            stats.Add("Director/InBand", ChallengeBand.InBand(_last) ? 1f : 0f);
+            stats.Add("Director/Deaths", _last.Deaths);
+            stats.Add("Director/Difficulty", LastDecision);
 
-            if (_sim.Finished)
-            {
-                if (!_sim.Completed) AddReward(-1f);  // run failed: extra frustration penalty
-                stats.Add("Director/RunCompleted", _sim.Completed ? 1f : 0f);
-                EndEpisode();
-            }
+            if (_sim.Finished) EndEpisode();
         }
 
-        /// <summary>No model and no trainer: behave like the heuristic director (graceful fallback).</summary>
+        /// <summary>Used when there is no trained model and no trainer: act like the rule-based director.</summary>
         public override void Heuristic(in ActionBuffers actionsOut)
         {
-            var d = _fallback.Decide(_current);
             var a = actionsOut.DiscreteActions;
-            a[0] = d.Difficulty; a[1] = d.Density; a[2] = d.StrongBoons ? 1 : 0;
+            a[0] = _fallback.Decide(_last);
         }
 
-        /// <summary>Gameplay/eval: synchronous decision for the given telemetry.</summary>
-        public DirectorDecision DecideNow(in SegmentTelemetry last)
+        /// <summary>Gameplay/evaluation: decide synchronously for the given telemetry.</summary>
+        public int DecideNow(in SegmentTelemetry last)
         {
-            _current = last;
-            if (last.SegmentIndex < 0) _fallback.ResetRun();
+            _last = last;
             HasDecision = false;
             RequestDecision();
-            Academy.Instance.EnvironmentStep();   // runs observation -> inference -> OnActionReceived now
+            Academy.Instance.EnvironmentStep();   // observation -> policy -> OnActionReceived, right now
             return HasDecision ? LastDecision : _fallback.Decide(last);
         }
     }

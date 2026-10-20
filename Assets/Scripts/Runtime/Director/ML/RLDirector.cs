@@ -27,7 +27,7 @@ namespace Odyssey.Director.ML
             }
         }
 
-        public DirectorDecision Decide(in SegmentTelemetry last) => _agent.DecideNow(last);
+        public int Decide(in SegmentTelemetry last) => _agent.DecideNow(last);
         public void ResetRun() { }
     }
 }
