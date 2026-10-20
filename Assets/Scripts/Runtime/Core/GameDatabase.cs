@@ -15,7 +15,6 @@ namespace Odyssey.Core
         public PlayerConfig Player;
         public EnemyConfig MeleeEnemy;
         public EnemyConfig RangedEnemy;
-        public EnemyConfig Boss;
         public List<BoonDefinition> Boons = new List<BoonDefinition>();
         public ChunkLibrary Chunks;
         public DialogueSequence Opening;

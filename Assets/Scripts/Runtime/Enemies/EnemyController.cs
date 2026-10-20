@@ -49,12 +49,12 @@ namespace Odyssey.Enemies
 
             Health = GetComponent<Health>();
             Health.Configure(Team.Enemy, config.MaxHealth * tier, 0.05f);
-            Health.Hit += (info, applied) => { LastHit = info; _flash = 0.12f; if (Config.StaggerOnHit) HurtPending = true; };
+            Health.Hit += (info, applied) => { LastHit = info; _flash = 0.12f; HurtPending = true; };
             Health.Died += info => Died?.Invoke(this, info);
 
             _visual = Placeholder.AddSprite(transform, "Body", config.Sprite, config.Tint, config.Size, Vector2.zero, 5);
             _eye = Placeholder.AddSprite(transform, "Eye", Placeholder.Circle, Color.white,
-                new Vector2(0.28f, 0.28f) * Mathf.Max(1f, config.Size.y / 1.4f), new Vector2(0.2f, config.Size.y * 0.3f), 6);
+                new Vector2(0.28f, 0.28f), new Vector2(0.2f, config.Size.y * 0.3f), 6);
 
             var hb = new GameObject("Hitbox");
             hb.transform.SetParent(transform, false);

@@ -17,23 +17,23 @@ using UnityEngine.InputSystem;
 namespace Odyssey.Core
 {
     /// <summary>
-    /// Level01 game loop (the "game loop <-> telemetry <-> Director" box in the README diagram):
+    /// The Level01 game loop:
     ///   intro chunk + opening dialogue
-    ///   for each segment: Director decides -> assembler appends chunk -> telemetry recorded
-    ///                     -> shrine gate: telemetry closed, Director decides next, boon offered
-    ///   finale chunk (Polyphemus) -> ship -> end screen.
-    /// Death: respawn at the segment checkpoint; running out of lives ends the run.
+    ///   for each segment: Director picks a difficulty -> a chunk is added -> telemetry is recorded
+    ///   at the shrine gate: telemetry closes, Director decides the next difficulty, player picks a boon
+    ///   after the last segment: ship chunk -> ending dialogue -> end screen.
+    /// Dying respawns the player at the segment's checkpoint; losing every life ends the run.
     /// </summary>
     public class RunManager : MonoBehaviour
     {
         [SerializeField] private int seed = 0;   // 0 = random each run
 
         private GameDatabase _db;
-        private RunModifierRegistry _registry;
+        private RunModifierRegistry _boons;
         private TelemetryTracker _telemetry;
         private IDirector _director;
         private string _directorLabel;
-        private LevelAssembler _assembler;
+        private LevelAssembler _level;
         private PlayerController _player;
         private CameraFollow _camera;
         private Hud _hud;
@@ -43,15 +43,16 @@ namespace Odyssey.Core
         private System.Random _rng;
 
         private ChunkInstance _currentChunk;
-        private ChunkDefinition _lastCombatDef;
-        private DirectorDecision _decision;
+        private ChunkDefinition _lastCombatChunk;
+        private int _segment;          // segment being played (== Segments once on the ship chunk)
+        private int _difficulty = 1;   // difficulty of the segment being played
         private SegmentTelemetry _lastTelemetry;
-        private int _segment;        // index of the segment being played (== Segments during the finale)
         private int _deaths, _kills;
         private float _runStart;
         private bool _ending;
         private readonly List<string> _decisionLog = new List<string>();
 
+        // ------------------------------------------------------------------ setup
         private void Awake()
         {
             Time.timeScale = 1f;
@@ -59,7 +60,7 @@ namespace Odyssey.Core
             Layers.ConfigureCollisionMatrix();
             _db = GameDatabase.Load();
             _rng = new System.Random(seed != 0 ? seed : System.Environment.TickCount);
-            _registry = new RunModifierRegistry();
+            _boons = new RunModifierRegistry();
             _telemetry = new TelemetryTracker();
 
             _hud = Hud.Create();
@@ -80,17 +81,10 @@ namespace Odyssey.Core
                 case DirectorKind.Heuristic: _director = new HeuristicDirector(); _directorLabel = "Heuristic"; break;
                 default:
                     var agent = FindFirstObjectByType<DirectorAgent>();
-                    if (agent != null)
-                    {
-                        var rl = new RLDirector(agent);
-                        _director = rl;
-                        _directorLabel = rl.HasModel ? "RL (PPO policy)" : "RL (no model assigned -> heuristic fallback)";
-                    }
-                    else
-                    {
-                        _director = new HeuristicDirector();
-                        _directorLabel = "Heuristic (DirectorAgent missing from scene)";
-                    }
+                    if (agent == null) { _director = new HeuristicDirector(); _directorLabel = "Heuristic (no DirectorAgent in scene)"; break; }
+                    var rl = new RLDirector(agent);
+                    _director = rl;
+                    _directorLabel = rl.HasModel ? "RL (PPO policy)" : "RL (no model yet -> rule-based fallback)";
                     break;
             }
         }
@@ -98,28 +92,24 @@ namespace Odyssey.Core
         private void Start()
         {
             CreateBackdrop();
-            _assembler = new GameObject("Level").AddComponent<LevelAssembler>();
-            _assembler.Init(null, _db.MeleeEnemy, _db.RangedEnemy, _db.Boss);
-            _assembler.EnemySpawned += OnEnemySpawned;
+            _level = new GameObject("Level").AddComponent<LevelAssembler>();
+            _level.Init(null, _db.MeleeEnemy, _db.RangedEnemy);
+            _level.EnemySpawned += OnEnemySpawned;
 
-            var intro = _assembler.Append(_db.Chunks.Intro, 0, 0, _rng, -1);
+            var intro = _level.Append(_db.Chunks.Intro, 0, _rng, -1);
             SpawnPlayer(intro.PlayerStart ?? intro.Checkpoint);
-            _assembler.SetTarget(_player.transform);
+            _level.SetTarget(_player.transform);
             _currentChunk = intro;
-            HookChunk(intro);
 
             _camera = Camera.main.gameObject.AddComponent<CameraFollow>();
             _camera.Target = _player.transform;
             _camera.MinX = intro.StartX + 8f;
             _camera.Snap();
 
-            // first Director decision: no telemetry yet -> neutral observation
+            // first decision has no telemetry yet -> neutral observation
             _lastTelemetry = SegmentTelemetry.Neutral(_db.Segments, _player.MaxHealthStat, _db.ParSecondsPerSegment);
             _director.ResetRun();
-            _decision = _director.Decide(_lastTelemetry);
-            LogDecision(-1);
-            _segment = 0;
-            AppendSegment(_segment, _decision);
+            DecideAndAppend(0);
 
             _runStart = Time.time;
             RefreshHud();
@@ -127,7 +117,7 @@ namespace Odyssey.Core
             _dialogue.Play(_db.Opening, () =>
             {
                 _player.Input.Enabled = true;
-                BeginTelemetry();
+                StartSegmentTelemetry();
                 _hud.Toast("Reach the shrine at the end of each segment");
             });
         }
@@ -140,13 +130,11 @@ namespace Odyssey.Core
             go.AddComponent<BoxCollider2D>();
             go.AddComponent<Health>();
             _player = go.AddComponent<PlayerController>();
-            _player.Init(_db.Player, _registry);
-            _player.Attacked += _telemetry.ReportAttack;
-            _player.HitLanded += (t, info) => _telemetry.ReportHit(info.Amount);
+            _player.Init(_db.Player, _boons);
             _player.DamageTaken += amount => { _telemetry.ReportDamageTaken(amount); RefreshHud(); };
             _player.Died += OnPlayerDied;
             _player.Health.Model.Changed += (c, m) => _hud.SetHealth(c, m);
-            _registry.Changed += () => _hud.SetBoons(_registry);
+            _boons.Changed += () => _hud.SetBoons(_boons);
         }
 
         private static void CreateBackdrop()
@@ -158,83 +146,55 @@ namespace Odyssey.Core
         }
 
         // ------------------------------------------------------------------ segments
-        private void AppendSegment(int index, DirectorDecision d)
+        /// <summary>Ask the Director for a difficulty and add a matching chunk for segment <paramref name="index"/>.</summary>
+        private void DecideAndAppend(int index)
         {
-            var def = ChunkSelector.Pick(_db.Chunks.Combat, d.Difficulty, _rng, _lastCombatDef);
-            _lastCombatDef = def;
-            var inst = _assembler.Append(def, d.Difficulty, d.Density, _rng, index);
-            HookChunk(inst);
-            _pendingChunk = inst;
+            _difficulty = Odyssey.Director.Difficulty.Clamp(_director.Decide(_lastTelemetry));
+            LogDecision(index);
+            var def = ChunkSelector.Pick(_db.Chunks.Combat, _difficulty, _rng, _lastCombatChunk);
+            _lastCombatChunk = def;
+            var chunk = _level.Append(def, _difficulty, _rng, index);
+            chunk.Gate.Reached += OnGateReached;
+            _nextChunk = chunk;
         }
-        private ChunkInstance _pendingChunk;
+        private ChunkInstance _nextChunk;
 
-        private void HookChunk(ChunkInstance inst)
+        private void StartSegmentTelemetry()
         {
-            if (inst.Gate != null) inst.Gate.Reached += OnGateReached;
-            if (inst.Exit != null) inst.Exit.Reached += OnVictory;
-            if (inst.Trigger != null) inst.Trigger.Fired += seq =>
-            {
-                _player.Input.Enabled = false;
-                _dialogue.Play(seq, () => _player.Input.Enabled = true);
-            };
-            if (inst.Boss != null && inst.Exit != null)
-            {
-                var exit = inst.Exit;
-                inst.Boss.Died += (e, info) => { exit.Unlock(); _hud.Toast("Polyphemus falls! Run to the ship!"); };
-            }
-        }
-
-        private void BeginTelemetry()
-        {
-            _currentChunk = _pendingChunk ?? _currentChunk;
-            var c = _currentChunk;
-            _telemetry.BeginSegment(_segment, _db.Segments, _player.MaxHealthStat, _db.ParSecondsPerSegment,
-                _registry.Picked.Count, _decision.Difficulty, _decision.Density, c.EnemyHpSpawned);
+            _currentChunk = _nextChunk;
+            _telemetry.BeginSegment(_segment, _db.Segments, _difficulty, _player.MaxHealthStat, _db.ParSecondsPerSegment);
             RefreshHud();
         }
 
         private void OnGateReached(SegmentGate gate)
         {
             if (_ending) return;
-            var t = _telemetry.EndSegment(_player.Health.Model.Current, _player.Health.Model.Max);
-            _lastTelemetry = t;
-            int next = _segment + 1;
+            _lastTelemetry = _telemetry.EndSegment(_player.Health.Model.Max);
+            _player.Health.Model.Heal(_player.Health.Model.Max * _db.ShrineHeal);   // shrine heal
 
-            // shrine: heal, then the Director decides the next segment (incl. which boon pool to offer)
-            _player.Health.Model.Heal(_player.Health.Model.Max * _db.ShrineHeal);
-            bool strong = false;
-            if (next < _db.Segments)
+            var offer = BoonOffer.Draw(_db.Boons, _boons, 3, _rng);
+            if (offer.Count == 0) { AfterShrine(gate); return; }
+            _boonPanel.Show($"Shrine of the Gods - segment {gate.SegmentIndex + 1} cleared", offer, boon =>
             {
-                _decision = _director.Decide(t);
-                LogDecision(_segment);
-                strong = _decision.StrongBoons;
-            }
-
-            var offer = BoonOffer.Draw(_db.Boons, _registry, strong, 3, _rng);
-            string title = $"Shrine of the Gods — segment {gate.SegmentIndex + 1} cleared";
-            if (offer.Count == 0) { ContinueAfterShrine(gate, next); return; }
-            _boonPanel.Show(title, offer, boon =>
-            {
-                _registry.Add(boon);
+                _boons.Add(boon);
                 _hud.Toast($"{boon.God} grants {boon.DisplayName}");
-                ContinueAfterShrine(gate, next);
+                AfterShrine(gate);
             });
         }
 
-        private void ContinueAfterShrine(SegmentGate gate, int next)
+        private void AfterShrine(SegmentGate gate)
         {
-            _segment = next;
-            if (next < _db.Segments)
+            _segment++;
+            if (_segment < _db.Segments)
             {
-                AppendSegment(next, _decision);
-                BeginTelemetry();
+                DecideAndAppend(_segment);
+                StartSegmentTelemetry();
             }
             else
             {
-                var finale = _assembler.Append(_db.Chunks.Finale, 2, 0, _rng, next);
-                HookChunk(finale);
-                _pendingChunk = finale;
-                _currentChunk = finale;
+                var ship = _level.Append(_db.Chunks.Finale, 0, _rng, _segment);
+                ship.Exit.Reached += OnVictory;
+                _currentChunk = ship;
             }
             gate.Open();
             RefreshHud();
@@ -260,7 +220,8 @@ namespace Odyssey.Core
             _telemetry.ReportDeath();
             RefreshHud();
             if (_deaths >= _db.Lives) { StartCoroutine(EndRun(false, 1.5f)); return; }
-            _hud.Toast($"Fallen! {_db.Lives - _deaths} {(_db.Lives - _deaths == 1 ? "life" : "lives")} left");
+            int left = _db.Lives - _deaths;
+            _hud.Toast($"Fallen! {left} {(left == 1 ? "life" : "lives")} left");
             StartCoroutine(RespawnAfter(1.2f));
         }
 
@@ -275,10 +236,10 @@ namespace Odyssey.Core
         private void OnVictory()
         {
             if (_ending) return;
-            StartCoroutine(EndRunWithEpilogue());
+            StartCoroutine(VictoryRoutine());
         }
 
-        private IEnumerator EndRunWithEpilogue()
+        private IEnumerator VictoryRoutine()
         {
             _ending = true;
             _player.Input.Enabled = false;
@@ -294,17 +255,17 @@ namespace Odyssey.Core
             GameSession.LastResult = new GameSession.RunResult
             {
                 Victory = victory, Seconds = Time.time - _runStart, Kills = _kills, Deaths = _deaths,
-                Boons = _registry.Picked.Count, SegmentsCleared = Mathf.Min(_segment, _db.Segments), DirectorName = _directorLabel
+                Boons = _boons.Picked.Count, SegmentsCleared = Mathf.Min(_segment, _db.Segments), DirectorName = _directorLabel
             };
             yield return new WaitForSecondsRealtime(delay);
             GameSession.Load(GameSession.EndScene);
         }
 
-        // ------------------------------------------------------------------ per-frame
+        // ------------------------------------------------------------------ per frame + HUD
         private void Update()
         {
             if (_player == null) return;
-            if (_player.transform.position.y < -8f && _player.Health.IsAlive) // fell into the sea
+            if (_player.transform.position.y < -8f && _player.Health.IsAlive)   // fell into the sea
                 _player.Health.TakeDamage(new DamageInfo(9999f, Vector2.zero, Team.Environment, null));
 
             var kb = Keyboard.current;
@@ -312,11 +273,12 @@ namespace Odyssey.Core
             if (_hud.ShowDirector) _hud.SetDirector(DirectorText());
         }
 
-        private void LogDecision(int afterSegment)
+        private void LogDecision(int segmentIndex)
         {
-            _decisionLog.Add($"{(afterSegment < 0 ? "start" : $"after seg {afterSegment + 1}")}: {_decision}");
+            string line = $"segment {segmentIndex + 1} -> {Odyssey.Director.Difficulty.Names[_difficulty]}";
+            _decisionLog.Add(line);
             if (_decisionLog.Count > 5) _decisionLog.RemoveAt(0);
-            Debug.Log($"[Director:{_directorLabel}] {_decisionLog[_decisionLog.Count - 1]}  | obs {_lastTelemetry}");
+            Debug.Log($"[Director:{_directorLabel}] {line}  | based on {_lastTelemetry}");
         }
 
         private string DirectorText()
@@ -326,7 +288,7 @@ namespace Odyssey.Core
             if (_telemetry.IsOpen)
             {
                 var c = _telemetry.Current;
-                sb.AppendLine($"live: hp lost {(c.MaxHp > 0 ? c.HpLost / c.MaxHp : 0):P0}  hits {c.Hits}/{c.Attacks}  deaths {c.Deaths}");
+                sb.AppendLine($"now: {Odyssey.Director.Difficulty.Names[_difficulty]}, hp lost {(c.MaxHp > 0 ? c.HpLost / c.MaxHp : 0):P0}, deaths {c.Deaths}");
             }
             if (_lastTelemetry.SegmentIndex >= 0) sb.AppendLine($"last: {_lastTelemetry}");
             foreach (var l in _decisionLog) sb.AppendLine(l);
@@ -338,7 +300,7 @@ namespace Odyssey.Core
             if (_hud == null || _player == null) return;
             _hud.SetHealth(_player.Health.Model.Current, _player.Health.Model.Max);
             _hud.SetInfo(_segment, _db.Segments, _db.Lives - _deaths, _kills);
-            _hud.SetBoons(_registry);
+            _hud.SetBoons(_boons);
         }
     }
 }

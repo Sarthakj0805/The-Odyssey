@@ -45,15 +45,12 @@ namespace Odyssey.UI
                 int index = i;
                 var btn = UIFactory.Button(_root.transform, $"Card{i}", "", () => Pick(index),
                     UIFactory.V(x0, 0.25f), UIFactory.V(x0 + w, 0.72f), Vector2.zero, Vector2.zero);
-                var img = btn.GetComponent<Image>();
-                img.color = boon.Rarity == BoonRarity.Rare ? new Color(0.32f, 0.22f, 0.45f, 0.97f) : new Color(0.16f, 0.2f, 0.3f, 0.97f);
+                btn.GetComponent<Image>().color = new Color(0.16f, 0.2f, 0.3f, 0.97f);
                 var t = btn.transform;
                 UIFactory.Label(t, "Key", $"[{i + 1}]", 28, TextAnchor.UpperLeft, new Color(1, 1, 1, 0.6f), UIFactory.V(0, 1), UIFactory.V(1, 1), UIFactory.V(20, -60), UIFactory.V(-20, -15));
                 UIFactory.Label(t, "God", boon.God.ToUpperInvariant(), 30, TextAnchor.UpperCenter, boon.Tint, UIFactory.V(0, 1), UIFactory.V(1, 1), UIFactory.V(20, -110), UIFactory.V(-20, -60), FontStyle.Bold);
                 UIFactory.Label(t, "Name", boon.DisplayName, 38, TextAnchor.UpperCenter, UIFactory.Gold, UIFactory.V(0, 1), UIFactory.V(1, 1), UIFactory.V(20, -220), UIFactory.V(-20, -115), FontStyle.Bold);
                 UIFactory.Label(t, "Desc", boon.Description, 28, TextAnchor.UpperCenter, UIFactory.Parchment, UIFactory.V(0, 0), UIFactory.V(1, 1), UIFactory.V(25, 60), UIFactory.V(-25, -230));
-                UIFactory.Label(t, "Rarity", boon.Rarity == BoonRarity.Rare ? "RARE" : "Common", 24, TextAnchor.LowerCenter,
-                    boon.Rarity == BoonRarity.Rare ? new Color(0.85f, 0.6f, 1f) : new Color(1, 1, 1, 0.6f), UIFactory.V(0, 0), UIFactory.V(1, 0), UIFactory.V(0, 15), UIFactory.V(0, 55));
                 _cards.Add(btn.gameObject);
             }
         }

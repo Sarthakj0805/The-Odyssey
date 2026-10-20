@@ -28,7 +28,7 @@ namespace Odyssey.UI
             h._boons = UIFactory.Label(t, "Boons", "", 24, TextAnchor.UpperLeft, UIFactory.Gold, V(0, 1), V(0, 1), V(30, -420), V(700, -125));
             h._director = UIFactory.Label(t, "Director", "", 24, TextAnchor.UpperRight, new Color(0.6f, 0.9f, 1f), V(1, 1), V(1, 1), V(-1000, -200), V(-30, -30));
             h._toast = UIFactory.Label(t, "Toast", "", 44, TextAnchor.MiddleCenter, UIFactory.Gold, V(0, 0.62f), V(1, 0.72f), Vector2.zero, Vector2.zero, FontStyle.Bold);
-            UIFactory.Label(t, "Controls", "A/D move   Space jump   J attack   K/Shift dodge   Esc pause   F1 director info", 20,
+            UIFactory.Label(t, "Controls", "A/D move   Space jump   J attack   Esc pause   F1 director info", 20,
                 TextAnchor.LowerCenter, new Color(1, 1, 1, 0.45f), V(0, 0), V(1, 0), V(0, 10), V(0, 40));
             return h;
         }
@@ -42,7 +42,7 @@ namespace Odyssey.UI
         }
 
         public void SetInfo(int segment, int total, int livesLeft, int kills) =>
-            _info.text = (segment < total ? $"Segment {segment + 1}/{total}" : "The Cyclops' cave") + $"    Lives {livesLeft}    Kills {kills}";
+            _info.text = (segment < total ? $"Segment {segment + 1}/{total}" : "Run to the ship!") + $"    Lives {livesLeft}    Kills {kills}";
 
         public void SetBoons(RunModifierRegistry reg)
         {

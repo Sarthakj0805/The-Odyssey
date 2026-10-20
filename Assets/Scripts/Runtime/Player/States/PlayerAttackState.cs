@@ -25,7 +25,6 @@ namespace Odyssey.Player.States
             _recovery = P.Config.AttackRecovery / speed;
             _t = 0f; Phase = 0;
             if (Mathf.Abs(P.Input.Move) > 0.01f) P.Facing = Mathf.Sign(P.Input.Move);
-            P.NotifyAttackStarted();
         }
 
         public override void Tick(float dt)

@@ -56,7 +56,7 @@ namespace Odyssey.UI
             var c = UIFactory.Canvas("EndScreen", 0).transform;
             UIFactory.Panel(c, "Bg", r.Victory ? new Color(0.06f, 0.12f, 0.2f) : new Color(0.15f, 0.05f, 0.05f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             string title = r.Victory ? "The ships sail on…" : "Your journey ends here";
-            string sub = r.Victory ? "Polyphemus is blinded. Ithaca is still far away.  — To be continued —"
+            string sub = r.Victory ? "The Cyclops' island falls behind. Ithaca is still far away.  — To be continued —"
                                    : "The Cyclops' island claims another crew.";
             UIFactory.Label(c, "Title", title, 90, TextAnchor.MiddleCenter, UIFactory.Gold, UIFactory.V(0, 0.68f), UIFactory.V(1, 0.85f), Vector2.zero, Vector2.zero, FontStyle.Bold);
             UIFactory.Label(c, "Sub", sub, 36, TextAnchor.MiddleCenter, UIFactory.Parchment, UIFactory.V(0.1f, 0.6f), UIFactory.V(0.9f, 0.68f), Vector2.zero, Vector2.zero, FontStyle.Italic);

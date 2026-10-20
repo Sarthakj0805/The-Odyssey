@@ -14,12 +14,10 @@ namespace Odyssey.LevelGen
         public int Width { get; private set; }
         public int Height { get; private set; }
         public readonly List<RectInt> Solids = new List<RectInt>();
-        public readonly List<RectInt> OneWays = new List<RectInt>();
         public readonly List<Vector2Int> Spikes = new List<Vector2Int>();
         public readonly List<Vector2Int> MeleeSlots = new List<Vector2Int>();
         public readonly List<Vector2Int> RangedSlots = new List<Vector2Int>();
-        public Vector2Int? PlayerStart, Boss, Exit;
-        public int? TriggerColumn;
+        public Vector2Int? PlayerStart, Exit;
 
         private bool[,] _solid;
 
@@ -30,7 +28,6 @@ namespace Odyssey.LevelGen
             foreach (var r in rows) w = Math.Max(w, r.Length);
 
             var l = new ChunkLayout { Width = w, Height = h, _solid = new bool[w, h] };
-            var oneWay = new bool[w, h];
             for (int row = 0; row < h; row++)
             {
                 int y = h - 1 - row;
@@ -41,19 +38,15 @@ namespace Odyssey.LevelGen
                     switch (line[x])
                     {
                         case '#': l._solid[x, y] = true; break;
-                        case '=': oneWay[x, y] = true; break;
                         case '^': l.Spikes.Add(cell); break;
                         case 'm': l.MeleeSlots.Add(cell); break;
                         case 'r': l.RangedSlots.Add(cell); break;
-                        case 'B': l.Boss = cell; break;
                         case 'P': l.PlayerStart = cell; break;
                         case 'X': l.Exit = cell; break;
-                        case 'T': l.TriggerColumn = x; break;
                     }
                 }
             }
             l.Solids.AddRange(MergeRects(l._solid, w, h));
-            l.OneWays.AddRange(MergeRects(oneWay, w, h));
             return l;
         }
 
@@ -105,7 +98,7 @@ namespace Odyssey.LevelGen
     /// <summary>Deterministic (seeded) chunk + enemy-slot selection. No Unity objects: unit-testable.</summary>
     public static class ChunkSelector
     {
-        /// <summary>Fraction of enemy slots filled for density 0/1/2.</summary>
+        /// <summary>Fraction of a chunk's enemy slots that get an enemy, for difficulty 0/1/2.</summary>
         public static readonly float[] DensityFill = { 0.4f, 0.7f, 1.0f };
         /// <summary>Enemy HP/damage multiplier for difficulty 0/1/2.</summary>
         public static readonly float[] TierMultiplier = { 0.8f, 1.0f, 1.3f };
@@ -121,12 +114,12 @@ namespace Odyssey.LevelGen
         }
 
         /// <summary>Choose which slots get an enemy (at least one when any slot exists).</summary>
-        public static List<int> ChooseSlots(int slotCount, int density, System.Random rng)
+        public static List<int> ChooseSlots(int slotCount, int difficulty, System.Random rng)
         {
             var idx = new List<int>();
             for (int i = 0; i < slotCount; i++) idx.Add(i);
             if (slotCount == 0) return idx;
-            int n = Math.Max(1, (int)Math.Round(slotCount * DensityFill[Math.Max(0, Math.Min(2, density))]));
+            int n = Math.Max(1, (int)Math.Round(slotCount * DensityFill[Math.Max(0, Math.Min(2, difficulty))]));
             for (int i = idx.Count - 1; i > 0; i--) { int j = rng.Next(i + 1); (idx[i], idx[j]) = (idx[j], idx[i]); }
             idx.RemoveRange(n, idx.Count - n);
             idx.Sort();

@@ -31,11 +31,6 @@ namespace Odyssey.Player
         public Vector2 HitboxSize = new Vector2(1.6f, 1.2f);
         public Vector2 HitboxOffset = new Vector2(0.95f, 0.1f);
 
-        [Header("Dodge")]
-        public float DodgeSpeed = 16f;
-        public float DodgeDuration = 0.18f;
-        public float DodgeCooldown = 0.6f;
-
         [Header("Visuals (optional - placeholder used if empty)")]
         public Sprite Sprite;
         public Color Tint = new Color(0.95f, 0.8f, 0.35f);

@@ -21,9 +21,7 @@ namespace Odyssey.Enemies
         public float Damage = 12f;
         public float PatrolSpeed = 1.5f;
         public float ChaseSpeed = 3.2f;
-        public bool StaggerOnHit = true;
         public float HurtStunSeconds = 0.25f;
-        [Range(0f, 1f)] public float KnockbackResistance = 0f;
 
         [Header("Senses")]
         public float AggroRange = 7f;

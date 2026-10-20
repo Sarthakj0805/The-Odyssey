@@ -100,8 +100,7 @@ namespace Odyssey.Enemies.States
             E.ClearHurt();
             E.Hitbox.Close();
             _t = 0f;
-            var kb = E.LastHit.Knockback * (1f - E.Config.KnockbackResistance);
-            E.Body.linearVelocity = kb;
+            E.Body.linearVelocity = E.LastHit.Knockback;
         }
         public override void Tick(float dt) { base.Tick(dt); _t += dt; }
     }

@@ -31,7 +31,6 @@ namespace Odyssey.Player
         public float Facing { get; set; } = 1f;
         public bool Grounded { get; private set; }
         public float LastGroundedTime { get; private set; } = -99f;
-        public float LastDodgeTime { get; set; } = -99f;
         public bool HurtPending { get; private set; }
         public DamageInfo LastHit { get; private set; }
         public string StateName => Machine?.Current?.Name ?? "-";
@@ -44,8 +43,6 @@ namespace Odyssey.Player
         public float KnockbackStat => Modifiers.Evaluate(StatType.Knockback, 1f);
         public float HealOnKillStat => Modifiers.Evaluate(StatType.HealOnKill, 0f);
 
-        public event Action Attacked;                       // a swing started
-        public event Action<IDamageable, DamageInfo> HitLanded;
         public event Action<float> DamageTaken;             // applied amount
         public event Action Died;
 
@@ -91,7 +88,6 @@ namespace Odyssey.Player
             Hitbox.Team = Team.Player;
             Hitbox.Size = config.HitboxSize;
             Hitbox.LocalOffset = config.HitboxOffset;
-            Hitbox.Landed += (t, info) => HitLanded?.Invoke(t, info);
 
             BuildStateMachine();
         }
@@ -105,13 +101,11 @@ namespace Odyssey.Player
             var jump = new PlayerJumpState(this);
             var fall = new PlayerFallState(this);
             var attack = new PlayerAttackState(this);
-            var dodge = new PlayerDodgeState(this);
             var hurt = new PlayerHurtState(this);
             var dead = new PlayerDeadState(this);
 
             bool CanCoyoteJump() => Input.HasJump(Time.time, config.JumpBuffer) && Time.time - LastGroundedTime <= config.CoyoteTime;
             bool WantsAttack() => Input.HasAttack(Time.time, 0.15f);
-            bool WantsDodge() => Input.HasDodge(Time.time, 0.1f) && Time.time - LastDodgeTime >= config.DodgeCooldown;
             bool Airborne() => !Grounded && Time.time - LastGroundedTime > config.CoyoteTime;
 
             // global
@@ -119,10 +113,7 @@ namespace Odyssey.Player
             Machine.AddAnyTransition(hurt, () => HurtPending && Health.IsAlive);
 
             foreach (var s in new IState[] { idle, run, jump, fall })
-            {
-                Machine.AddTransition(s, dodge, WantsDodge);
                 Machine.AddTransition(s, attack, WantsAttack);
-            }
             foreach (var s in new IState[] { idle, run })
             {
                 Machine.AddTransition(s, jump, CanCoyoteJump);
@@ -136,8 +127,6 @@ namespace Odyssey.Player
 
             Machine.AddTransition(attack, idle, () => attack.Finished && Grounded);
             Machine.AddTransition(attack, fall, () => attack.Finished && !Grounded);
-            Machine.AddTransition(dodge, idle, () => dodge.Finished && Grounded);
-            Machine.AddTransition(dodge, fall, () => dodge.Finished && !Grounded);
             Machine.AddTransition(hurt, idle, () => hurt.Finished);
 
             _idle = idle;
@@ -186,7 +175,6 @@ namespace Odyssey.Player
             Body.gravityScale = config.GravityScale * (falling ? config.FallGravityMultiplier : 1f);
         }
 
-        public void NotifyAttackStarted() => Attacked?.Invoke();
         public void ClearHurt() => HurtPending = false;
 
         private void OnHit(DamageInfo info, float applied)
@@ -218,7 +206,6 @@ namespace Odyssey.Player
             if (Visual == null) return;
             var c = config.Tint;
             if (Health.Model.IsInvulnerable && Health.IsAlive) c.a = (Mathf.Sin(Time.time * 40f) > 0f) ? 0.35f : 1f;
-            if (Machine.Current is PlayerDodgeState) c = Color.Lerp(c, Color.cyan, 0.6f);
             if (!Health.IsAlive) c = new Color(0.4f, 0.4f, 0.4f, 0.6f);
             Visual.color = c;
             Visual.flipX = Facing < 0f;

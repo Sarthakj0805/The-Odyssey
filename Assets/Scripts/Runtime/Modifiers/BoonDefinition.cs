@@ -8,8 +8,6 @@ namespace Odyssey.Modifiers
     /// <summary>Flat values are summed; PercentAdd values are summed then applied once: (base + flat) * (1 + pct).</summary>
     public enum ModifierOp { Flat, PercentAdd }
 
-    public enum BoonRarity { Common, Rare }
-
     [Serializable]
     public struct StatModifier
     {
@@ -21,9 +19,8 @@ namespace Odyssey.Modifiers
     }
 
     /// <summary>
-    /// A "Boon of the Gods" rogue-lite modifier. Pure data: adding a new boon is a new asset,
-    /// not new code. Covers stat effects (Athena/Hermes/Apollo/Hera), on-hit (Poseidon knockback)
-    /// and on-kill (Ares heal) via the stat channel the gameplay code queries.
+    /// A "Boon of the Gods" rogue-lite modifier. Pure data: a new boon is a new asset, not new code.
+    /// Each boon changes one or more player stats; gameplay code reads stats through the registry.
     /// </summary>
     [CreateAssetMenu(menuName = "Odyssey/Boon", fileName = "Boon")]
     public class BoonDefinition : ScriptableObject
@@ -32,7 +29,6 @@ namespace Odyssey.Modifiers
         public string DisplayName = "Boon";
         public string God = "Athena";
         [TextArea] public string Description = "";
-        public BoonRarity Rarity = BoonRarity.Common;
         [Min(1)] public int MaxStacks = 3;
         public Color Tint = Color.white;
         public StatModifier[] Modifiers = Array.Empty<StatModifier>();

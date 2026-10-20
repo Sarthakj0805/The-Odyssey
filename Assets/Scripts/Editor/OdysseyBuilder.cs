@@ -126,43 +126,28 @@ namespace Odyssey.EditorTools
                 e.AggroRange = 11; e.AttackRange = 11; e.AttackCooldown = 2.2f; e.Windup = 0.6f; e.Active = 0.05f; e.Recovery = 0.6f;
                 e.Knockback = new Vector2(5, 3); e.ProjectileFlightTime = 1.0f; e.ProjectileGravity = 1.2f;
             });
-            var boss = Asset<EnemyConfig>($"{Data}/Enemies/Polyphemus.asset", ow, e =>
-            {
-                e.DisplayName = "Polyphemus"; e.Kind = EnemyKind.Melee; e.Size = new Vector2(1.8f, 3.2f);
-                e.Tint = new Color(0.58f, 0.52f, 0.36f); e.MaxHealth = 220; e.Damage = 22; e.PatrolSpeed = 1f; e.ChaseSpeed = 2.2f;
-                e.StaggerOnHit = false; e.KnockbackResistance = 0.9f; e.AggroRange = 12; e.AttackRange = 2.4f; e.AttackCooldown = 1.4f;
-                e.Windup = 0.8f; e.Active = 0.2f; e.Recovery = 0.8f; e.Knockback = new Vector2(9, 6);
-                e.HitboxSize = new Vector2(3f, 2.5f); e.HitboxOffset = new Vector2(1.4f, -0.2f);
-            });
-
             var boons = new List<BoonDefinition>();
             foreach (var b in BoonTable)
                 boons.Add(Asset<BoonDefinition>($"{Data}/Boons/{b.id}.asset", ow, x =>
                 {
-                    x.Id = b.id; x.DisplayName = b.name; x.God = b.god; x.Description = b.desc; x.Rarity = b.rarity;
+                    x.Id = b.id; x.DisplayName = b.name; x.God = b.god; x.Description = b.desc;
                     x.MaxStacks = 3; x.Tint = b.tint; x.Modifiers = b.mods;
                 }));
 
             var gold = new Color(0.95f, 0.8f, 0.4f);
             var grey = new Color(0.75f, 0.85f, 1f);
-            var red = new Color(1f, 0.55f, 0.45f);
             var opening = Asset<DialogueSequence>($"{Data}/Dialogue/Opening.asset", ow, d => d.Lines = new[]
             {
                 new DialogueLine("Narrator", "Troy has fallen. After ten years of war, Odysseus and his crew sail for Ithaca - but the winds carry them to a wild, unknown island.", grey),
                 new DialogueLine("Odysseus", "Ten years of war... and now only the sea stands between us and home.", gold),
                 new DialogueLine("Eurylochus", "Captain, this island reeks of sheep and giants. The men are uneasy.", new Color(0.7f, 1f, 0.7f)),
                 new DialogueLine("Odysseus", "We need food and water. Stay close, and keep your spears ready.", gold),
-                new DialogueLine("Narrator", "Fight across the island, honour the gods at their shrines, and face what waits in the great cave.", grey),
-            });
-            var bossLines = Asset<DialogueSequence>($"{Data}/Dialogue/Polyphemus.asset", ow, d => d.Lines = new[]
-            {
-                new DialogueLine("Polyphemus", "Who crawls into my cave? Little men... you will make a fine supper.", red),
-                new DialogueLine("Odysseus", "My name is Nobody. Remember it, Cyclops.", gold),
+                new DialogueLine("Narrator", "Fight across the island, honour the gods at their shrines, and reach the ship before the Cyclops finds you.", grey),
             });
             var ending = Asset<DialogueSequence>($"{Data}/Dialogue/Ending.asset", ow, d => d.Lines = new[]
             {
                 new DialogueLine("Odysseus", "To the ships! Row, and do not look back!", gold),
-                new DialogueLine("Narrator", "Blinded Polyphemus cries out to his father, Poseidon. The sea will not forget this day...", grey),
+                new DialogueLine("Narrator", "Behind them, the Cyclops roars across the water. Ithaca is still far away...", grey),
             });
 
             var library = Asset<ChunkLibrary>($"{Data}/Chunks/ChunkLibrary.asset", ow, l => { });
@@ -172,7 +157,6 @@ namespace Odyssey.EditorTools
                 var c = Asset<ChunkDefinition>($"{Data}/Chunks/{e.Id}.asset", ow, x =>
                 {
                     x.Id = e.Id; x.Kind = e.Kind; x.Difficulty = e.Difficulty; x.GroundTint = e.Tint; x.Map = e.Map.Trim('\r', '\n');
-                    x.Dialogue = e.Kind == ChunkKind.Finale ? bossLines : null;
                 });
                 if (e.Kind == ChunkKind.Intro) library.Intro = c;
                 else if (e.Kind == ChunkKind.Finale) library.Finale = c;
@@ -182,7 +166,7 @@ namespace Odyssey.EditorTools
             EditorUtility.SetDirty(library);
 
             var db = Asset<GameDatabase>("Assets/Resources/GameDatabase.asset", ow, x => { });
-            db.Player = player; db.MeleeEnemy = melee; db.RangedEnemy = ranged; db.Boss = boss;
+            db.Player = player; db.MeleeEnemy = melee; db.RangedEnemy = ranged;
             if (ow || db.Boons.Count == 0) db.Boons = boons;
             db.Chunks = library; db.Opening = opening; db.Ending = ending;
             EditorUtility.SetDirty(db);
@@ -192,29 +176,23 @@ namespace Odyssey.EditorTools
 
         private struct BoonRow
         {
-            public string id, name, god, desc; public BoonRarity rarity; public Color tint; public StatModifier[] mods;
+            public string id, name, god, desc; public Color tint; public StatModifier[] mods;
         }
 
-        private static BoonRow Boon(string id, string name, string god, BoonRarity r, Color tint, string desc, params StatModifier[] mods) =>
-            new BoonRow { id = id, name = name, god = god, rarity = r, tint = tint, desc = desc, mods = mods };
+        private static BoonRow Boon(string id, string name, string god, Color tint, string desc, params StatModifier[] mods) =>
+            new BoonRow { id = id, name = name, god = god, tint = tint, desc = desc, mods = mods };
 
         private static StatModifier M(StatType s, ModifierOp op, float v) => new StatModifier(s, op, v);
 
+        /// <summary>Six Boons of the Gods, one per god.</summary>
         private static readonly BoonRow[] BoonTable =
         {
-            Boon("athena_common", "Athena's Insight", "Athena", BoonRarity.Common, new Color(0.7f, 0.8f, 1f), "+20% spear damage", M(StatType.Damage, ModifierOp.PercentAdd, 0.20f)),
-            Boon("athena_rare", "Aegis of Athena", "Athena", BoonRarity.Rare, new Color(0.7f, 0.8f, 1f), "+40% spear damage", M(StatType.Damage, ModifierOp.PercentAdd, 0.40f)),
-            Boon("hermes_common", "Winged Sandals", "Hermes", BoonRarity.Common, new Color(0.6f, 1f, 0.9f), "+12% move speed", M(StatType.MoveSpeed, ModifierOp.PercentAdd, 0.12f)),
-            Boon("hermes_rare", "Messenger's Haste", "Hermes", BoonRarity.Rare, new Color(0.6f, 1f, 0.9f), "+25% move speed", M(StatType.MoveSpeed, ModifierOp.PercentAdd, 0.25f)),
-            Boon("apollo_common", "Apollo's Tempo", "Apollo", BoonRarity.Common, new Color(1f, 0.85f, 0.4f), "+15% attack speed", M(StatType.AttackSpeed, ModifierOp.PercentAdd, 0.15f)),
-            Boon("apollo_rare", "Golden Lyre", "Apollo", BoonRarity.Rare, new Color(1f, 0.85f, 0.4f), "+30% attack speed", M(StatType.AttackSpeed, ModifierOp.PercentAdd, 0.30f)),
-            Boon("hera_common", "Hera's Resolve", "Hera", BoonRarity.Common, new Color(1f, 0.6f, 0.8f), "+20 max health", M(StatType.MaxHealth, ModifierOp.Flat, 20f)),
-            Boon("hera_rare", "Queen's Blessing", "Hera", BoonRarity.Rare, new Color(1f, 0.6f, 0.8f), "+40 max health", M(StatType.MaxHealth, ModifierOp.Flat, 40f)),
-            Boon("ares_common", "Ares' Bloodlust", "Ares", BoonRarity.Common, new Color(1f, 0.4f, 0.35f), "Heal 4 HP on every kill", M(StatType.HealOnKill, ModifierOp.Flat, 4f)),
-            Boon("ares_rare", "War God's Feast", "Ares", BoonRarity.Rare, new Color(1f, 0.4f, 0.35f), "Heal 8 HP on every kill", M(StatType.HealOnKill, ModifierOp.Flat, 8f)),
-            Boon("poseidon_common", "Undertow", "Poseidon", BoonRarity.Common, new Color(0.4f, 0.7f, 1f), "Hits knock enemies back 50% further", M(StatType.Knockback, ModifierOp.PercentAdd, 0.5f)),
-            Boon("poseidon_rare", "Earthshaker", "Poseidon", BoonRarity.Rare, new Color(0.4f, 0.7f, 1f), "+100% knockback and +10% damage",
-                M(StatType.Knockback, ModifierOp.PercentAdd, 1.0f), M(StatType.Damage, ModifierOp.PercentAdd, 0.10f)),
+            Boon("athena", "Athena's Insight", "Athena", new Color(0.7f, 0.8f, 1f), "+25% spear damage", M(StatType.Damage, ModifierOp.PercentAdd, 0.25f)),
+            Boon("hermes", "Winged Sandals", "Hermes", new Color(0.6f, 1f, 0.9f), "+15% move speed", M(StatType.MoveSpeed, ModifierOp.PercentAdd, 0.15f)),
+            Boon("apollo", "Apollo's Tempo", "Apollo", new Color(1f, 0.85f, 0.4f), "+20% attack speed", M(StatType.AttackSpeed, ModifierOp.PercentAdd, 0.20f)),
+            Boon("hera", "Hera's Resolve", "Hera", new Color(1f, 0.6f, 0.8f), "+25 max health", M(StatType.MaxHealth, ModifierOp.Flat, 25f)),
+            Boon("ares", "Ares' Bloodlust", "Ares", new Color(1f, 0.4f, 0.35f), "Heal 5 HP on every kill", M(StatType.HealOnKill, ModifierOp.Flat, 5f)),
+            Boon("poseidon", "Undertow", "Poseidon", new Color(0.4f, 0.7f, 1f), "Hits knock enemies back 60% further", M(StatType.Knockback, ModifierOp.PercentAdd, 0.6f)),
         };
 
         // ------------------------------------------------------------------ scenes
@@ -277,7 +255,7 @@ namespace Odyssey.EditorTools
             var bp = go.AddComponent<BehaviorParameters>();
             bp.BehaviorName = BehaviorName;
             bp.BrainParameters.VectorObservationSize = Odyssey.Director.DirectorObservation.Size;
-            bp.BrainParameters.ActionSpec = ActionSpec.MakeDiscrete(3, 3, 2);
+            bp.BrainParameters.ActionSpec = ActionSpec.MakeDiscrete(3);   // easy / medium / hard
             bp.BehaviorType = BehaviorType.Default;
             bp.DeterministicInference = deterministic;
             var agent = go.AddComponent<DirectorAgent>();

@@ -10,7 +10,7 @@ namespace Odyssey.Tests
         {
             "..........",
             "...r......",
-            "..###.==..",
+            "..###.....",
             "m.......m.",
             "####..####",
             "####..####",
@@ -27,7 +27,6 @@ namespace Odyssey.Tests
             CollectionAssert.Contains(l.Solids, new RectInt(0, 0, 4, 2));
             CollectionAssert.Contains(l.Solids, new RectInt(6, 0, 4, 2));
             CollectionAssert.Contains(l.Solids, new RectInt(2, 3, 3, 1));
-            Assert.AreEqual(1, l.OneWays.Count);
         }
 
         [Test]

@@ -56,17 +56,12 @@ namespace Odyssey.Modifiers
         }
     }
 
-    /// <summary>Draws N distinct boons for a shrine offer, from the weak (Common) or strong (Rare) pool.</summary>
+    /// <summary>Draws up to N boons for a shrine offer: random, at most one per god, skipping maxed-out boons.</summary>
     public static class BoonOffer
     {
-        public static List<BoonDefinition> Draw(IList<BoonDefinition> all, RunModifierRegistry registry,
-            bool strongPool, int count, Random rng)
+        public static List<BoonDefinition> Draw(IList<BoonDefinition> all, RunModifierRegistry registry, int count, Random rng)
         {
-            var wanted = strongPool ? BoonRarity.Rare : BoonRarity.Common;
-            var pool = all.Where(b => b != null && b.Rarity == wanted && registry.CanAdd(b)).ToList();
-            if (pool.Count < count) // top up from the other pool so the shrine never shows < count options
-                pool.AddRange(all.Where(b => b != null && b.Rarity != wanted && registry.CanAdd(b)));
-
+            var pool = all.Where(b => b != null && registry.CanAdd(b)).ToList();
             var result = new List<BoonDefinition>(count);
             var usedGods = new HashSet<string>();
             while (result.Count < count && pool.Count > 0)
@@ -74,8 +69,7 @@ namespace Odyssey.Modifiers
                 int i = rng.Next(pool.Count);
                 var pick = pool[i];
                 pool.RemoveAt(i);
-                if (!usedGods.Add(pick.God)) continue; // one offer per god
-                result.Add(pick);
+                if (usedGods.Add(pick.God)) result.Add(pick);
             }
             return result;
         }
