@@ -22,12 +22,4 @@ namespace Odyssey.LevelGen
 
         public string[] Rows => Map.Replace("\r", "").Trim('\n').Split('\n');
     }
-
-    [CreateAssetMenu(menuName = "Odyssey/Chunk Library", fileName = "ChunkLibrary")]
-    public class ChunkLibrary : ScriptableObject
-    {
-        public ChunkDefinition Intro;
-        public ChunkDefinition Finale;
-        public List<ChunkDefinition> Combat = new List<ChunkDefinition>();
-    }
 }

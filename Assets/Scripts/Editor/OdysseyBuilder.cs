@@ -103,6 +103,7 @@ namespace Odyssey.EditorTools
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             var a = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (a == null && File.Exists(path)) AssetDatabase.DeleteAsset(path);   // stale asset with a broken script link
             bool created = a == null;
             if (created) { a = ScriptableObject.CreateInstance<T>(); AssetDatabase.CreateAsset(a, path); }
             if (created || overwrite) { init(a); EditorUtility.SetDirty(a); }
