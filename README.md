@@ -111,7 +111,7 @@ level), then writes `results/director_eval.md` and `.csv`. It reports three metr
 
 ## Getting started
 1. Open the folder in **Unity 6000.3.9f1** from Unity Hub. The first import downloads
-   `com.unity.ml-agents@4.0.0`, which pulls in Inference Engine (resolved to 2.5.0).
+   `com.unity.ml-agents@4.0.0`, which pulls in Inference Engine 2.2.1.
 2. Run the menu **Odyssey → Build Project Content**. It creates the physics layers, the data
    assets and the 5 scenes: MainMenu, Level01, EndScreen, DirectorTraining and DirectorEval.
 3. Open `Assets/Scenes/MainMenu.unity` and press **Play**. The *AI Director* button on the title
@@ -175,6 +175,10 @@ the player's jump height and that no enemy slot floats in the air.
 - **The Director is trained on simulated players, not humans.** The simulator's numbers are
   hand-picked assumptions. `telemetry.csv` records real play so it can be calibrated later.
 - There is one short level with two enemy types. Difficulty changes only between segments.
+
+## Study notes
+For a full walkthrough of the code plus the theory (RL/PPO, ML-Agents, FSMs, dynamic difficulty,
+Unity concepts) and likely interview questions, see [docs/PROJECT_NOTES.md](docs/PROJECT_NOTES.md).
 
 ## Credits
 See [CREDITS.md](CREDITS.md). The code is MIT licensed (see `LICENSE`).
