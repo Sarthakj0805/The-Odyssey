@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a137eeb92e3251a45964d80c4d5686dd, type: 3}
+  m_Name: GameDatabase
+  m_EditorClassIdentifier: Odyssey.Runtime::Odyssey.Core.GameDatabase
+  Player: {fileID: 11400000, guid: d1b1550269e19714cb9327d83055fe37, type: 2}
+  MeleeEnemy: {fileID: 11400000, guid: 2638d69b8a3cc4145a2bb8ff70a8778f, type: 2}
+  RangedEnemy: {fileID: 11400000, guid: 16639511dc9662f46a7acfe025eab835, type: 2}
+  Boons:
+  - {fileID: 11400000, guid: a99de9aedf432f5408557155a68ea77b, type: 2}
+  - {fileID: 11400000, guid: 038132bf6d8e6964189b6709c7eb151d, type: 2}
+  - {fileID: 11400000, guid: f174d677036f4a74fa70ff93654cdec9, type: 2}
+  - {fileID: 11400000, guid: a1788435380aefb4ebd92054637f9d78, type: 2}
+  - {fileID: 11400000, guid: 3fdca35338fc6ff4298505dc5a588cc3, type: 2}
+  - {fileID: 11400000, guid: ea7312f1a90f5544eb6c52732075cf7d, type: 2}
+  Chunks: {fileID: 11400000, guid: 4cd62d4f8ce019443a6849317809df33, type: 2}
+  Opening: {fileID: 11400000, guid: eeb6d2c569471404fa33aebfdae46cef, type: 2}
+  Ending: {fileID: 11400000, guid: 665867d15b38c1d4b842743d63cb2357, type: 2}
+  Segments: 3
+  Lives: 3
+  ParSecondsPerSegment: 45
+  ShrineHeal: 0.15

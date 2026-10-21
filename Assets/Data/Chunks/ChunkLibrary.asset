@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f2366a56571c6b408096766a706a3fa, type: 3}
+  m_Name: ChunkLibrary
+  m_EditorClassIdentifier: Odyssey.Runtime::Odyssey.LevelGen.ChunkLibrary
+  Intro: {fileID: 11400000, guid: 8c6c456e1b1c63c4cacafa96103d8abd, type: 2}
+  Finale: {fileID: 11400000, guid: b8560674fea4e644996cf794a82a9871, type: 2}
+  Combat:
+  - {fileID: 11400000, guid: e7e1ccb35de30574a8cab10cb55dafcd, type: 2}
+  - {fileID: 11400000, guid: d3e5fd73ef141e04a8e7999f995c7e7e, type: 2}
+  - {fileID: 11400000, guid: 4496fe7a4e17e1748b3b295fe3e1e1e3, type: 2}
+  - {fileID: 11400000, guid: 12ab11a7c5aa1904187da5063fc52918, type: 2}
+  - {fileID: 11400000, guid: dd69a1bd7fe59124ba6a44a26d438de6, type: 2}
+  - {fileID: 11400000, guid: c67169c4bbb78aa49892323aac147a26, type: 2}

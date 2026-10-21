@@ -7,16 +7,20 @@ EditorBuildSettings:
   m_Scenes:
   - enabled: 1
     path: Assets/Scenes/MainMenu.unity
-    guid: 07877d0e263d85c42abb76e8921a7fa4
+    guid: 1684bf67514080b489c1e0ac5a45cc10
   - enabled: 1
-    path: Assets/Scenes/Level_0_Greybox.unity
-    guid: 1a9cff3a9271f6b47abecbe59144580b
+    path: Assets/Scenes/Level01.unity
+    guid: f2ef7cc275d4d904a9221e8d1fbbce03
   - enabled: 1
-    path: Assets/Scenes/GameOver.unity
-    guid: beacce537a0562f41a489b3f49678024
-  - enabled: 0
-    path: Assets/Scenes/SampleScene.unity
-    guid: 8c9cfa26abfee488c85f1582747f6a02
+    path: Assets/Scenes/EndScreen.unity
+    guid: 0d419e495eb6fc34f8e8ab93ce480946
+  - enabled: 1
+    path: Assets/Scenes/DirectorTraining.unity
+    guid: 338e2351c628dea4884c0ffa95f2fe20
+  - enabled: 1
+    path: Assets/Scenes/DirectorEval.unity
+    guid: 794ab80690fa12a4fb68cf0a902ec7e4
   m_configObjects:
+    com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0
