@@ -12,13 +12,16 @@ namespace Odyssey.Core
         private static Sprite _square, _circle, _triangle;
         private static Material _unlit;
 
-        /// <summary>Unlit sprite material so placeholder art is visible without any 2D lights (URP 2D renderer).</summary>
+        /// <summary>
+        /// Unlit sprite material. "Sprites/Default" renders under both the built-in pipeline and URP
+        /// (URP draws it as a legacy unlit pass) and needs no 2D lights, so blocks are always visible.
+        /// </summary>
         public static Material UnlitMaterial
         {
             get
             {
                 if (_unlit != null) return _unlit;
-                var shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default") ?? Shader.Find("Sprites/Default");
+                var shader = Shader.Find("Sprites/Default");
                 if (shader != null) _unlit = new Material(shader) { name = "PlaceholderUnlit" };
                 return _unlit;
             }
