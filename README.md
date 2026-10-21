@@ -111,7 +111,7 @@ level), then writes `results/director_eval.md` and `.csv`. It reports three metr
 
 ## Getting started
 1. Open the folder in **Unity 6000.3.9f1** from Unity Hub. The first import downloads
-   `com.unity.ml-agents@4.0.0`, which pulls in Inference Engine 2.2.1.
+   `com.unity.ml-agents@4.0.0`, which pulls in Inference Engine (resolved to 2.5.0).
 2. Run the menu **Odyssey → Build Project Content**. It creates the physics layers, the data
    assets and the 5 scenes: MainMenu, Level01, EndScreen, DirectorTraining and DirectorEval.
 3. Open `Assets/Scenes/MainMenu.unity` and press **Play**. The *AI Director* button on the title

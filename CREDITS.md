@@ -18,6 +18,6 @@ committed.
 | Library | Version | Licence |
 |---|---|---|
 | Unity ML-Agents (`com.unity.ml-agents`, `mlagents`) | 4.0.0 / 1.1.0 (Release 23) | Apache-2.0 |
-| Unity Inference Engine (`com.unity.ai.inference`) | 2.2.1 (ML-Agents dependency) | Unity Companion License |
+| Unity Inference Engine (`com.unity.ai.inference`) | 2.5.0 (resolved ML-Agents dependency) | Unity Companion License |
 | PyTorch | 2.2.2 (CPU) | BSD-3-Clause |
 | Unity Input System, URP, uGUI, Test Framework | as in `Packages/manifest.json` | Unity Companion License |
